@@ -3,6 +3,16 @@
 args = `arg="$(filter-out $@,$(MAKECMDGOALS))" && echo $${arg:-${1}}`
 DOMAIN=$(call args,dora.dev)
 
+define lazy_gen
+	openssl genrsa -out ./domains/$(1).key 4096 && \
+	openssl req -new -sha256 -key ./domains/${1}.key -subj "/C=US/ST=CA/O=JovoOrg, Inc./CN=${1}" -out ./domains/${1}.csr && \
+	./utils/genConfig.sh ${1} && \
+		openssl x509 -req -in ./domains/${1}.csr \
+	       -CA ./ca/rootCA.crt -CAkey ./ca/rootCA.key \
+	       -CAcreateserial -out ./domains/${1}.crt -days 1024 \
+	       -sha256 -extfile ./domains/${1}.ext
+endef
+
 genRootCAKeyPWD:
 	openssl genrsa -des3 -out ./ca/rootCA.key 4096
 1genRootCAKey:
@@ -21,19 +31,8 @@ setup:
 rmdomains:
 	rm -rf ./domains/*
 gen: 
-	openssl genrsa -out ./domains/${DOMAIN}.key 4096 && \
-	openssl req -new -sha256 -key ./domains/${DOMAIN}.key -subj "/C=US/ST=CA/O=JovoOrg, Inc./CN=${DOMAIN}" -out ./domains/${DOMAIN}.csr && \
-	./utils/genConfig.sh ${DOMAIN} && \
-		openssl x509 -req -in ./domains/${DOMAIN}.csr \
-	       -CA ./ca/rootCA.crt -CAkey ./ca/rootCA.key \
-	       -CAcreateserial -out ./domains/${DOMAIN}.crt -days 1024 \
-	       -sha256 -extfile ./domains/${DOMAIN}.ext
-lazy: 
-	openssl genrsa -out ./domains/${DOMAIN}.key 4096 && \
-	openssl req -new -sha256 -key ./domains/${DOMAIN}.key -subj "/C=US/ST=CA/O=JovoOrg, Inc./CN=${DOMAIN}" -out ./domains/${DOMAIN}.csr && \
-	./utils/genConfig.sh ${DOMAIN} && \
-		openssl x509 -req -in ./domains/${DOMAIN}.csr \
-	       -CA ./ca/rootCA.crt -CAkey ./ca/rootCA.key \
-	       -CAcreateserial -out ./domains/${DOMAIN}.crt -days 1024 \
-	       -sha256 -extfile ./domains/${DOMAIN}.ext && ./utils/setup ${DOMAIN}
-
+	$(call lazy_gen,${DOMAIN})
+proxy_app: 
+	$(call lazy_gen,${DOMAIN}) && ./utils/setup ${DOMAIN} proxy_pass_nginx
+lazy:
+	$(call lazy_gen,${DOMAIN}) && ./utils/setup ${DOMAIN} example

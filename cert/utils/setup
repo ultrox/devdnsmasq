@@ -12,7 +12,7 @@ if [ ! -f $MY_BASE/$DOMAIN/index.html ]; then
   echo "HELLO $DOMAIN" > $MY_BASE/$DOMAIN/index.html
 fi
 
-sed "s/example/$DOMAIN/g" ./utils/example.conf | \
+sed "s/example/$DOMAIN/g" ./utils/$2.conf | \
   sed "s#BASEPATH#$MY_BASE#g" > $SITES/$DOMAIN.conf && \
 sudo nginx -t && \
 sudo nginx -s reload
