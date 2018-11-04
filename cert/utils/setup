@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e;
+
+DOMAIN=$1
+MY_BASE="$HOME/code"
+SITES='/usr/local/etc/nginx/sites-enabled'
+
+mkdir -p ~/code/$DOMAIN/cert
+yes | cp ./domains/$DOMAIN.* ~/code/$DOMAIN/cert
+
+if [ ! -f $MY_BASE/$DOMAIN/index.html ]; then
+  echo "HELLO $DOMAIN" > $MY_BASE/$DOMAIN/index.html
+fi
+
+sed "s/example/$DOMAIN/g" ./utils/example.conf | \
+  sed "s#BASEPATH#$MY_BASE#g" > $SITES/$DOMAIN.conf && \
+sudo nginx -t && \
+sudo nginx -s reload
